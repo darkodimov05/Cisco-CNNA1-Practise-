@@ -1,0 +1,173 @@
+
+1. Divide the 192.168.4.0 /24 network into 4 equal sized subnets
+
+	network : 11000000.10101000.00000100.00000000
+	subnet :  11111111.11111111.11111111.00000000
+	-Za da kreirame cetiri podmrezi nie treba da pozajmime dva bita od delot za host :
+	network : 192.168.4.0/26
+	subnet :  11111111.11111111.11111111.11000000 -------- .192
+	podmrezite ke bidat : 
+		1.192.168.4.0/26
+		2.192.168.4.64/26
+		3.192.168.4.128/26
+		4.192.168.4.192/26
+		
+2.Use the 2nd subnet for the green network
+  Taa e brojot dva od gore:
+	2.192.168.4.64 ---- 127/26   (GREEN) - samo ovaa za zelena mrezaaaaaaaaaaaaaaaaaaaaaaaaa
+
+3.Use the 4th subnet to create 4 smaller subnet for 14 hosts each. Use the first of the smaller subnets for the yellow network!!!!
+	Treba da ja iskoristime 4tata podmreza za da kreirame novi 4 podmrezi so 14 hosta::
+			4.192.168.4.192/26
+		 network: 11000000.10101000.00000100.11000000
+		 subnet : 11111111.11111111.11111111.11000000
+		Za da imame po 14 hosta 2^4 ni trebaat 4bita za host slobodni pa taka:
+		 subnet : 11111111.11111111.11111111.11110000    ----- .240
+		 network : 192.168.4.192/28  
+		podmrezite se:
+		1.192.168.4.192/28
+		2.192.168.4.208/28
+		3.192.168.4.224/28
+		4.192.168.4.240/28
+Use the first of the smaller subnets for the yellow network!!!!
+	1.192.168.4.192 ----- 207/28	(YELLOW) - samo ovaa za zolta mrezaaaaaaaaaaaaaaaaaaaaaaaaa	
+	
+	
+4. The router get the first usable address in the subnet
+		192.168.4.65 intreface od strana na zeleniot
+		
+		192.168.4.193 intreface od strana na zoltiot 
+		
+5. The PCs get 5th and 6th, usable address in the green subnet,
+    and the 5th in the yellow subnet
+	192.168.4.69 --- PC0    --- ova e za zeleniot
+	192.168.4.70 --- PC1	--- ova e za zeleniot
+	
+	192.168.4.197 -- PC2  --- ova e za zoltata
+	
+	
+7.IPv6 Addressing
+
+Green Network: 2001:DB8:CCCC:1::/64
+    R1 -- :1
+    PC0 -- :A
+    PC1 -- :B
+
+Yellow Network: 2001:DB8:CCCC:2::/64
+    R1 -- :1
+    PC2 -- :A
+    Server -- :F
+
+Link-local:
+    R1 -- FE80::1
+	
+8. The server gets the second address in the subnet	 (VOJ E U ZOLTIOT)
+	192.168.4.194  --- ova e za zoltata za SERVEROT
+	
+	
+	
+	
+CONFIGURACIJA NA RUTER I SWITCHEVI:
+R1
+
+router> enable
+router# configure terminal 
+router(config)# hostname R1
+R1(config)# banner motd "No unauthorized access allowed!"
+R1(config)# service password-encryption
+R1(config)# security passwords min-length 10
+R1(config)# enable secret class12345
+R1(config)# username admin secret danscourses
+R1(config)# ip ssh version 2
+R1(config)# ip domain-name danscourses.com
+R1(config)# crypto key generate rsa
+    modulus[512] 1024
+R1(config)# interface GigabitEthernet0/0
+R1(config-if)# ip address 192.168.4.65 255.255.255.192
+R1(config-if)# ipv6 address FE80::1 link-local
+R1(config-if)# ipv6 address 2001:DB8:CCCC:1::1/64
+R1(config-if)# no shutdown
+R1(config-if)# interface GigabitEthernet0/1
+R1(config-if)# ip address 192.168.4.193 255.255.255.240
+R1(config-if)# ipv6 address FE80::1 link-local
+R1(config-if)# ipv6 address 2001:DB8:CCCC:2::1/64
+R1(config-if)# no shutdown
+R1(config-if)# exit
+R1(config)# line con 0
+R1(config-line)# exec-timeout 5 0
+R1(config-line)# login local
+R1(config-line)# line vty 0 4
+R1(config-line)# exec-timeout 5 0
+R1(config-line)# login local
+R1(config-line)# transport input ssh
+R1(config-line)#exit
+R1(config-line)#copy run start
+
+ 
+
+?
+S1
+
+switch> enable
+switch# configure terminal 
+switch(config)# hostname S1
+S1(config)# banner motd "No unauthorized access allowed!"
+S1(config)# service password-encryption
+S1(config)# enable secret class12345
+S1(config)# username admin secret danscourses
+S1(config)# ip ssh version 2
+S1(config)# ip domain-name danscourses.com
+S1(config)# crypto key generate rsa
+    modulus[512] 1024
+S1(config)# interface vlan 1
+S1(config-if)# ip address 192.168.4.126 255.255.255.192
+S1(config-if)# no shut
+S1(config-if)# exit
+S1(config)# ip default-gateway 192.168.4.65
+S1(config)# line con 0
+S1(config-line)# exec-timeout 5 0
+S1(config-line)# login local
+S1(config-line)# line vty 0 4
+S1(config-line)# exec-timeout 5 0
+S1(config-line)# login local
+S1(config-line)# transport input ssh>
+S1(config-line)# line vty 5 15
+S1(config-line)# exec-timeout 5 0
+S1(config-line)# login local
+S1(config-line)# transport input ssh
+S1(config-line)# exit
+S1(config-line)# copy run start
+
+S2
+
+switch> enable
+switch# configure terminal 
+switch(config)# hostname S2
+S2(config)# banner motd "No unauthorized access allowed!"
+S2(config)# service password-encryption
+S2(config)# enable secret class12345
+S2(config)# username admin secret danscourses
+S2(config)# ip ssh version 2
+S2(config)# ip domain-name danscourses.com
+S2(config)# crypto key generate rsa
+    modulus[512] 1024
+S2(config)# interface vlan 1
+S2(config-if)# ip address 192.168.4.206 255.255.255.240
+S2(config-if)# no shut
+S2(config-if)# exit
+S2(config)# ip default-gateway 192.168.4.193
+S2(config)# line con 0
+S2(config-line)# exec-timeout 5 0
+S2(config-line)# login local
+S2(config-line)# line vty 0 4
+S2(config-line)# exec-timeout 5 0
+S2(config-line)# login local
+S2(config-line)# transport input ssh>
+S2(config-line)# line vty 5 15
+S2(config-line)# exec-timeout 5 0
+S2(config-line)# login local
+S2(config-line)# transport input ssh
+S2(config-line)# exit
+S2(config-line)# copy run start
+	
+	
